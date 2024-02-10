@@ -5,6 +5,8 @@
         "tamasfe.even-better-toml",
         "wayou.vscode-todo-highlight",
         "alefragnani.bookmarks",
-        "christian-kohler.path-intellisense"
+        "christian-kohler.path-intellisense",
+        "humao.rest-client",
+        "ms-mssql.sql-bindings-vscode"
     ]
 }
