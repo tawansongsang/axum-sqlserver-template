@@ -1,6 +1,3 @@
-volumes:
-  db:
-  # log:
 services:
   # server:
   #   build:
@@ -30,5 +27,5 @@ services:
     ports:
       - 1433:1433
     volumes:
-      - db:/var/opt/mssql
+      - ./tmp:/var/opt/mssql
       # - log:/vat/opt/mssql/log
