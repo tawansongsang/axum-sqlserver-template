@@ -1,36 +1,37 @@
-alias bb := backend_build
-alias bc := backend_check
-alias br := backend_run
-alias bd := backend_dev
-alias bt := backend_test
-alias btdb := backend_test_surrealdb
-alias btr := backend_test_rpc
-alias btd := backend_test_derive
-alias si := surreal_import
+alias b := build
+alias c := check
+alias d := dev
+alias e := example
+alias r := run
+alias t := test
+alias tdb := test_sqlserver
+alias tr := test_rpc
+alias td := test_derive
 
-backend_build:
+build:
   cargo build 
 
-backend_check:
+check:
   cargo check 
 
-backend_run:
+run:
   cargo run 
 
-backend_dev:
+dev:
   cargo run  --example quick_dev
 
-backend_test:
+example:
+  cargo run --example sqlserver
+
+test:
   cargo test 
 
-backend_test_surrealdb:
-  cargo test  -p lib-surrealdb
+test_sqlserver:
+  cargo test  -p lib-sqlserver
 
-backend_test_rpc:
+test_rpc:
   cargo test  -p lib-rpc
 
-backend_test_derive:
+test_derive:
   cargo test  -p lib-derive
   
-surreal_import PATH:
-  surreal import --conn http://localhost:8000 --user root --pass root --ns ns_tempalte --db db_template {{PATH}}

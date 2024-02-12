@@ -24,7 +24,8 @@ impl ModelManager {
         Ok(ModelManager { db })
     }
 
-    pub(in crate::model) fn db(&self) -> &Db {
+    // pub(in crate::model) fn db(&self) -> &Db {
+    pub fn db(&self) -> &Db {
         &self.db
     }
 
@@ -36,10 +37,7 @@ impl ModelManager {
 
         let mut client = self.db().get().await.unwrap();
 
-        let stream = client
-            .simple_query("SELECT * FROM @@VERSION;")
-            .await
-            .unwrap();
+        let stream = client.simple_query("SELECT @@VERSION;").await.unwrap();
 
         let result = stream
             .into_first_result()

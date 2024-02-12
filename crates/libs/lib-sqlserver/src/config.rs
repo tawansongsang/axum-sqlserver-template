@@ -38,4 +38,12 @@ impl CoreConfig {
             DB_PASSWORD: get_env("MSSQL_PASSWORD")?,
         })
     }
+
+    pub fn print_env(&self) {
+        println!("DB_HOST: {}", self.DB_HOST);
+        println!("DB_PORT: {}", self.DB_PORT);
+        println!("DB_NAME: {}", self.DB_NAME);
+        println!("DB_USERNAME: {}", self.DB_USERNAME);
+        println!("DB_PASSWORD: {}", self.DB_PASSWORD);
+    }
 }

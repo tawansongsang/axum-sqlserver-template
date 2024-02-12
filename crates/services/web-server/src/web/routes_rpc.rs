@@ -8,7 +8,7 @@ use axum::{
     Json, Router,
 };
 use lib_rpc::{router::RpcRouter, task_rpc, RpcRequest, RpcResources};
-use lib_surrealdb::model::ModelManager;
+use lib_sqlserver::model::ModelManager;
 
 use serde_json::{json, Value};
 

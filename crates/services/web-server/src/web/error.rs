@@ -4,7 +4,7 @@ use crate::web;
 use axum::{http::StatusCode, response::IntoResponse};
 use derive_more::From;
 use lib_auth::{pwd, token};
-use lib_surrealdb::model;
+use lib_sqlserver::model;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
 use tracing::debug;
@@ -84,20 +84,20 @@ impl Error {
             // -- Auth
             CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
 
-            Model(model::Error::EntityNotFound { entity, id }) => (
-                StatusCode::BAD_REQUEST,
-                ClientError::ENTITY_NOT_FOUND { entity, id: *id },
-            ),
+            // Model(model::Error::EntityNotFound { entity, id }) => (
+            //     StatusCode::BAD_REQUEST,
+            //     ClientError::ENTITY_NOT_FOUND { entity, id: *id },
+            // ),
 
-            Model(model::Error::UsernameAlreadyExists) => (
-                StatusCode::BAD_REQUEST,
-                ClientError::USERNAME_ALREADY_EXISTS,
-            ),
+            // Model(model::Error::UsernameAlreadyExists) => (
+            //     StatusCode::BAD_REQUEST,
+            //     ClientError::USERNAME_ALREADY_EXISTS,
+            // ),
 
-            Model(model::Error::UsernameNotValidFormat) => (
-                StatusCode::BAD_REQUEST,
-                ClientError::USERNAME_NOT_VALID_FORMAT,
-            ),
+            // Model(model::Error::UsernameNotValidFormat) => (
+            //     StatusCode::BAD_REQUEST,
+            //     ClientError::USERNAME_NOT_VALID_FORMAT,
+            // ),
 
             // -- Rpc
             Rpc(lib_rpc::Error::SerdeJson(detail)) => (

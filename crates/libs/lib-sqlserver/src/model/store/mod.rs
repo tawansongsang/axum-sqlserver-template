@@ -3,6 +3,7 @@ mod error;
 use bb8::Pool;
 use bb8_tiberius::ConnectionManager;
 use tiberius::{AuthMethod, Config};
+use tracing::debug;
 
 pub use self::error::{Error, Result};
 

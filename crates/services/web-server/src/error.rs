@@ -1,5 +1,5 @@
 use derive_more::From;
-use lib_surrealdb::model;
+use lib_sqlserver::model;
 
 pub type Result<T> = std::result::Result<T, Error>;
 

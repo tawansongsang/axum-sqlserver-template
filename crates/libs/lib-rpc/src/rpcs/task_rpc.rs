@@ -27,12 +27,13 @@ pub async fn create_task<'a>(
     mm: ModelManager,
     params: ParamsForCreate<TaskParamsForCreate>,
 ) -> Result<Task<'a>> {
-    let ParamsForCreate { data } = params;
+    // let ParamsForCreate { data } = params;
 
-    let task_id = TaskBmc::create(&ctx, &mm, data).await?;
-    let task = TaskBmc::get(&ctx, &mm, &task_id.id.id.to_raw()).await?;
+    // let task_id = TaskBmc::create(&ctx, &mm, data).await?;
+    // let task = TaskBmc::get(&ctx, &mm, &task_id.id.id.to_raw()).await?;
 
-    Ok(task)
+    // Ok(task)
+    todo!()
 }
 
 pub async fn list_tasks<'a>(
@@ -40,9 +41,10 @@ pub async fn list_tasks<'a>(
     mm: ModelManager,
     params: ParamsList<TaskFilter>,
 ) -> Result<Vec<Task<'a>>> {
-    let tasks = TaskBmc::list(&ctx, &mm, params.filters, params.list_options).await?;
+    // let tasks = TaskBmc::list(&ctx, &mm, params.filters, params.list_options).await?;
 
-    Ok(tasks)
+    // Ok(tasks)
+    todo!()
 }
 
 pub async fn update_task<'a>(
@@ -50,20 +52,22 @@ pub async fn update_task<'a>(
     mm: ModelManager,
     params: ParamsForUpdate<TaskParamsForUpdate>,
 ) -> Result<Task<'a>> {
-    let ParamsForUpdate { id, data } = params;
+    // let ParamsForUpdate { id, data } = params;
 
-    TaskBmc::update(&ctx, &mm, &id, data).await?;
+    // TaskBmc::update(&ctx, &mm, &id, data).await?;
 
-    let task = TaskBmc::get(&ctx, &mm, &id).await?;
+    // let task = TaskBmc::get(&ctx, &mm, &id).await?;
 
-    Ok(task)
+    // Ok(task)
+    todo!()
 }
 
 pub async fn delete_task<'a>(ctx: Ctx, mm: ModelManager, params: ParamsIded) -> Result<Task<'a>> {
-    let ParamsIded { id } = params;
+    // let ParamsIded { id } = params;
 
-    let task = TaskBmc::get(&ctx, &mm, &id).await?;
-    TaskBmc::delete(&ctx, &mm, &id).await?;
+    // let task = TaskBmc::get(&ctx, &mm, &id).await?;
+    // TaskBmc::delete(&ctx, &mm, &id).await?;
 
-    Ok(task)
+    // Ok(task)
+    todo!()
 }

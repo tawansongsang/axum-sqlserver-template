@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use lib_auth::token::{validate_web_token, Token};
-use lib_surrealdb::{
+use lib_sqlserver::{
     ctx::Ctx,
     model::{
         user_info::{bmc::UserInfoBmc, UserInfoForAuth},
@@ -54,34 +54,35 @@ pub async fn mw_ctx_resolve(
 }
 
 async fn inner_ctx_resolve(mm: State<ModelManager>, cookies: &Cookies) -> CtxExtResult {
-    // -- Get Token String
-    let token = cookies
-        .get(AUTH_TOKEN)
-        .map(|c| c.value().to_string())
-        .ok_or(CtxExtError::TokenNotInCookie)?;
+    todo!()
+    // // -- Get Token String
+    // let token = cookies
+    //     .get(AUTH_TOKEN)
+    //     .map(|c| c.value().to_string())
+    //     .ok_or(CtxExtError::TokenNotInCookie)?;
 
-    // -- Parse Token
-    let token: Token = token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
+    // // -- Parse Token
+    // let token: Token = token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
 
-    // -- Get UserInfoForAuth
-    let user = UserInfoBmc::first_by_id::<UserInfoForAuth>(&Ctx::root_ctx(), &mm, &token.ident)
-        .await
-        .map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?;
+    // // -- Get UserInfoForAuth
+    // let user = UserInfoBmc::first_by_id::<UserInfoForAuth>(&Ctx::root_ctx(), &mm, &token.ident)
+    //     .await
+    //     .map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?;
 
-    let user = user.ok_or(CtxExtError::UserNotFound)?;
+    // let user = user.ok_or(CtxExtError::UserNotFound)?;
 
-    // -- Validate Token
-    validate_web_token(&token, user.token_salt).map_err(|_| CtxExtError::FailValidate)?;
+    // // -- Validate Token
+    // validate_web_token(&token, user.token_salt).map_err(|_| CtxExtError::FailValidate)?;
 
-    // -- Update Token
-    let user_id = &user.id.id.to_raw();
-    set_token_cookie(cookies, user_id, user.token_salt)
-        .map_err(|_| CtxExtError::CannotSetTokenCookie)?;
+    // // -- Update Token
+    // let user_id = &user.id.id.to_raw();
+    // set_token_cookie(cookies, user_id, user.token_salt)
+    //     .map_err(|_| CtxExtError::CannotSetTokenCookie)?;
 
-    // -- Create CtxExtResult
-    Ctx::new(Some(user.id.to_raw()))
-        .map(CtxW)
-        .map_err(|ex| CtxExtError::CtxCreateFail(ex.to_string()))
+    // // -- Create CtxExtResult
+    // Ctx::new(Some(user.id.to_raw()))
+    //     .map(CtxW)
+    //     .map_err(|ex| CtxExtError::CtxCreateFail(ex.to_string()))
 }
 
 // region:    --- Ctx Extractor
