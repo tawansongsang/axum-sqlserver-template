@@ -18,23 +18,32 @@ async fn main() {
 
     let db = mm.db();
     let config = core_config();
-    config.print_env();
-    let mut conn = db.get().await.unwrap();
-    let res = conn
-        .simple_query("SELECT @@version")
-        .await
-        .unwrap()
-        .into_first_result()
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|row| {
-            let val: &str = row.get(0).unwrap();
-            String::from(val)
-        })
-        .collect::<Vec<_>>();
+    // config.print_env();
+    // let mut conn = db.get().await.unwrap();
+    // let res = conn
+    //     .simple_query("SELECT @@version")
+    //     .await
+    //     .unwrap()
+    //     .into_first_result()
+    //     .await
+    //     .unwrap()
+    //     .into_iter()
+    //     .map(|row| {
+    //         let val: &str = row.get(0).unwrap();
+    //         String::from(val)
+    //     })
+    //     .collect::<Vec<_>>();
 
-    println!("{:?}", &res);
+    // let res = conn
+    //     .simple_query("SELECT GETDATE() as date_time;")
+    //     .await
+    //     .unwrap()
+    //     .into_row()
+    //     .await
+    //     .unwrap()
+    //     .unwrap();
+
+    // println!("{:?}", &res);
 }
 
 // fn main() {

@@ -1,12 +1,12 @@
 use serde::de::DeserializeOwned;
-// use surrealdb::sql;
+use tiberius::{Query, Row};
 
 use crate::{
     ctx::Ctx,
-    model::{Error, ModelManager, Result},
+    model::{error::QueryError, Error, ModelManager, Result},
 };
 
-use super::{UserInfo, UserInfoCreated, UserInfoForCreate, UserInfoRecord};
+use super::{UserInfo, UserInfoCreated, UserInfoForAuth, UserInfoForCreate, UserInfoRecord};
 
 pub struct UserInfoBmc;
 
@@ -48,15 +48,26 @@ impl UserInfoBmc {
         todo!()
     }
 
-    pub async fn first_by_id<'de, E>(_ctx: &Ctx, mm: &ModelManager, id: &str) -> Result<Option<E>>
+    pub async fn first_by_id<E>(_ctx: &Ctx, mm: &ModelManager, id: &str) -> Result<UserInfoForAuth>
     where
-        E: DeserializeOwned,
+        E: DeserializeOwned + TryFrom<Row>,
     {
         // FIXME: change to sql server
         // let db = mm.db();
-        // let user_info_for_auth = db.select(("user_info", id)).await?;
+        let mut client = mm.db().get().await?;
+        let sql = "SELECT UserInfoID FROM dbo.UserInfo WHERE UserInfoID=@P1";
+        let mut query = Query::new(sql);
+        query.bind(id);
+        let row = query
+            .query(&mut client)
+            .await?
+            .into_row()
+            .await?
+            .ok_or(Error::UserInfo(QueryError::DataNotFound))?;
 
-        // Ok(user_info_for_auth)
+        let user_info_e = E::try_from(row).map_err(|e| format!("{:?}", e))?;
+
+        // Ok(user_info_e)
         todo!()
     }
 

@@ -1,5 +1,6 @@
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
+use tiberius::Row;
 
 use super::store;
 
@@ -11,6 +12,11 @@ pub enum Error {
     // -- Modules
     #[from]
     Store(store::Error),
+    UserInfo(QueryError),
+
+    // // -- Convert
+    // #[from]
+    // TryFromRow(String),
 
     // -- Externals
     #[from]
@@ -26,3 +32,8 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+#[derive(Debug, Serialize)]
+pub enum QueryError {
+    DataNotFound,
+}

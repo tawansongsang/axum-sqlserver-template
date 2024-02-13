@@ -54,15 +54,14 @@ pub async fn mw_ctx_resolve(
 }
 
 async fn inner_ctx_resolve(mm: State<ModelManager>, cookies: &Cookies) -> CtxExtResult {
-    todo!()
-    // // -- Get Token String
-    // let token = cookies
-    //     .get(AUTH_TOKEN)
-    //     .map(|c| c.value().to_string())
-    //     .ok_or(CtxExtError::TokenNotInCookie)?;
+    // -- Get Token String
+    let token = cookies
+        .get(AUTH_TOKEN)
+        .map(|c| c.value().to_string())
+        .ok_or(CtxExtError::TokenNotInCookie)?;
 
-    // // -- Parse Token
-    // let token: Token = token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
+    // -- Parse Token
+    let token: Token = token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
 
     // // -- Get UserInfoForAuth
     // let user = UserInfoBmc::first_by_id::<UserInfoForAuth>(&Ctx::root_ctx(), &mm, &token.ident)
@@ -83,6 +82,7 @@ async fn inner_ctx_resolve(mm: State<ModelManager>, cookies: &Cookies) -> CtxExt
     // Ctx::new(Some(user.id.to_raw()))
     //     .map(CtxW)
     //     .map_err(|ex| CtxExtError::CtxCreateFail(ex.to_string()))
+    todo!()
 }
 
 // region:    --- Ctx Extractor
