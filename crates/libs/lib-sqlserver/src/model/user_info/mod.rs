@@ -1,40 +1,41 @@
 pub mod bmc;
 
-use super::error::{Error, Result};
+use crate::convert::TryFromRow;
 use lib_sqlserver_derive::TryFromRow;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tiberius::time::time::PrimitiveDateTime;
 use tiberius::{Row, Uuid};
 
 #[derive(Debug, Deserialize)]
 pub struct UserInfo {
-    pub id: Uuid,
-    pub username: String,
-    pub name: String,
-    pub email: String,
-    pub email_verified: PrimitiveDateTime,
+    pub id: Option<Uuid>,
+    pub username: Option<String>,
+    pub name: Option<String>,
+    pub email: Option<String>,
+    pub email_verified: Option<PrimitiveDateTime>,
 
     // -- pwd and token info
-    pub password: String,
-    pub password_salt: Uuid,
-    pub token_salt: Uuid,
-    pub create_by: Uuid,
-    pub create_on: PrimitiveDateTime,
-    pub update_by: Uuid,
-    pub update_on: PrimitiveDateTime,
+    pub password: Option<String>,
+    pub password_salt: Option<Uuid>,
+    pub token_salt: Option<Uuid>,
+    pub create_by: Option<Uuid>,
+    pub create_on: Option<PrimitiveDateTime>,
+    pub update_by: Option<Uuid>,
+    pub update_on: Option<PrimitiveDateTime>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, TryFromRow)]
 pub struct UserInfoGet {
-    pub id: Uuid,
-    pub username: String,
-    pub email: String,
-    pub email_verified: PrimitiveDateTime,
-    pub name: String,
-    pub create_by: Uuid,
-    pub create_on: PrimitiveDateTime,
-    pub update_by: Uuid,
-    pub update_on: PrimitiveDateTime,
+    pub id: Option<Uuid>,
+    pub username: Option<String>,
+    pub email: Option<String>,
+    pub email_verified: Option<PrimitiveDateTime>,
+    pub name: Option<String>,
+    pub create_by: Option<Uuid>,
+    pub create_on: Option<PrimitiveDateTime>,
+    pub update_by: Option<Uuid>,
+    pub update_on: Option<PrimitiveDateTime>,
 }
 
 #[derive(Debug, Serialize)]
@@ -57,15 +58,15 @@ pub struct UserInfoCreated {
     pub update_by: Option<Uuid>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, TryFromRow)]
 pub struct UserInfoForLogin {
-    pub id: Uuid,
-    pub username: String,
-    pub name: String,
+    pub id: Option<Uuid>,
+    pub username: Option<String>,
+    pub name: Option<String>,
     pub password: Option<String>, // encrypted, #_scheme_id_#....
-    pub password_salt: Uuid,
-    pub token_salt: Uuid,
-    pub role: String,
+    pub password_salt: Option<Uuid>,
+    pub token_salt: Option<Uuid>,
+    pub role: Option<String>,
 }
 
 #[derive(Debug, Deserialize, TryFromRow)]
@@ -79,5 +80,12 @@ pub struct UserInfoForAuth {
 
 #[derive(Debug, Deserialize)]
 pub struct UserInfoRecord {
-    pub id: Uuid,
+    pub id: Option<Uuid>,
 }
+
+/// Marker Trait
+pub trait UserInfoBy: DeserializeOwned + TryFromRow<Row> {}
+
+impl UserInfoBy for UserInfoForAuth {}
+impl UserInfoBy for UserInfoGet {}
+impl UserInfoBy for UserInfoForLogin {}

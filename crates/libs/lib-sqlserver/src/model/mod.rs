@@ -11,9 +11,10 @@ pub use self::error::{Error, Result};
 
 use self::store::{new_db_pool, Db};
 
+use crate::convert::TryFromRow;
 use serde::Deserialize;
 use tiberius::time::time::PrimitiveDateTime;
-use tiberius::{Row, Uuid};
+use tiberius::Uuid;
 
 #[derive(Clone)]
 pub struct ModelManager {
@@ -77,7 +78,7 @@ impl ModelManager {
         println!("{:?}", date_time);
         println!("{:?}", uuid);
 
-        let test = Test::try_from(row);
+        let test = Test::try_from_row(row);
         println!("{:?}", test);
     }
 }

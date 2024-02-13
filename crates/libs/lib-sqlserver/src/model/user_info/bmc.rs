@@ -1,3 +1,4 @@
+use crate::model::Uuid;
 use serde::de::DeserializeOwned;
 use tiberius::{Query, Row};
 
@@ -6,56 +7,20 @@ use crate::{
     model::{error::QueryError, Error, ModelManager, Result},
 };
 
-use super::{UserInfo, UserInfoCreated, UserInfoForAuth, UserInfoForCreate, UserInfoRecord};
+use super::{
+    TryFromRow, UserInfo, UserInfoBy, UserInfoCreated, UserInfoForAuth, UserInfoForCreate,
+    UserInfoRecord,
+};
 
 pub struct UserInfoBmc;
 
 impl UserInfoBmc {
-    pub async fn get<'de, E>(_ctx: &Ctx, mm: &ModelManager, id: String) -> Result<Option<E>>
+    pub async fn get<E>(_ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<E>
     where
-        E: DeserializeOwned,
+        E: UserInfoBy,
     {
-        // FIXME: change to sql server
-        // let db = mm.db();
-        // let sql = "SELECT * FROM user_info:$id LIMIT 1;";
-        // let mut result = db.query(sql).bind(("id", id.to_string())).await?;
-
-        // let user_info: Option<E> = result.take(0)?;
-
-        // Ok(user_info)
-        todo!()
-    }
-
-    pub async fn first_by_username<'de, E>(
-        _ctx: &Ctx,
-        mm: &ModelManager,
-        username: &str,
-    ) -> Result<Option<E>>
-    where
-        E: DeserializeOwned,
-    {
-        // FIXME: change to sql server
-        // let db = mm.db();
-        // let sql = "SELECT * FROM user_info WHERE username = $username LIMIT 1;";
-        // let mut result = db
-        //     .query(sql)
-        //     .bind(("username", username.to_string()))
-        //     .await?;
-
-        // let user_info_for_auth: Option<E> = result.take(0)?;
-
-        // Ok(user_info_for_auth)
-        todo!()
-    }
-
-    pub async fn first_by_id<E>(_ctx: &Ctx, mm: &ModelManager, id: &str) -> Result<UserInfoForAuth>
-    where
-        E: DeserializeOwned + TryFrom<Row>,
-    {
-        // FIXME: change to sql server
-        // let db = mm.db();
         let mut client = mm.db().get().await?;
-        let sql = "SELECT UserInfoID FROM dbo.UserInfo WHERE UserInfoID=@P1";
+        let sql = "SELECT TOP 1 * FROM dbo.UserInfo WHERE UserInfoID=@P1";
         let mut query = Query::new(sql);
         query.bind(id);
         let row = query
@@ -65,18 +30,52 @@ impl UserInfoBmc {
             .await?
             .ok_or(Error::UserInfo(QueryError::DataNotFound))?;
 
-        let user_info_e = E::try_from(row).map_err(|e| format!("{:?}", e))?;
+        let user_info_e = E::try_from_row(row)?;
 
-        // Ok(user_info_e)
-        todo!()
+        Ok(user_info_e)
     }
 
-    pub async fn update_pwd(
-        ctx: &Ctx,
-        mm: &ModelManager,
-        // id: sql::Uuid,
-        password: &str,
-    ) -> Result<()> {
+    pub async fn first_by_username<E>(_ctx: &Ctx, mm: &ModelManager, username: &str) -> Result<E>
+    where
+        E: UserInfoBy,
+    {
+        let mut client = mm.db().get().await?;
+        let sql = "SELECT TOP 1 * FROM dbo.UserInfo WHERE Username=@P1";
+        let mut query = Query::new(sql);
+        query.bind(username);
+        let row = query
+            .query(&mut client)
+            .await?
+            .into_row()
+            .await?
+            .ok_or(Error::UserInfo(QueryError::DataNotFound))?;
+
+        let user_info_e = E::try_from_row(row)?;
+
+        Ok(user_info_e)
+    }
+
+    // pub async fn first_by_id<E>(_ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<E>
+    // where
+    //     E: UserInfoBy,
+    // {
+    //     let mut client = mm.db().get().await?;
+    //     let sql = "SELECT TOP 1 UserInfoID FROM dbo.UserInfo WHERE UserInfoID=@P1";
+    //     let mut query = Query::new(sql);
+    //     query.bind(id);
+    //     let row = query
+    //         .query(&mut client)
+    //         .await?
+    //         .into_row()
+    //         .await?
+    //         .ok_or(Error::UserInfo(QueryError::DataNotFound))?;
+
+    //     let user_info_e = E::try_from_row(row)?;
+
+    //     Ok(user_info_e)
+    // }
+
+    pub async fn update_pwd(ctx: &Ctx, mm: &ModelManager, id: Uuid, password: &str) -> Result<()> {
         // FIXME: change to sql server
         // let db = mm.db();
         // let sql =

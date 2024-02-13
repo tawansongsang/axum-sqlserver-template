@@ -15,10 +15,8 @@ fn impl_try_from(ast: &DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let body = fn_try_from(&ast.data, name);
     let gen = quote! {
-        impl TryFrom<Row> for #name {
-            type Error = Error;
-
-            fn try_from(row: Row) -> Result<#name> {
+        impl TryFromRow<tiberius::Row> for #name {
+            fn try_from_row(row: tiberius::Row) -> crate::model::Result<#name> {
                 #body
             }
         }
