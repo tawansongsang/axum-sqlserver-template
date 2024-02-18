@@ -1,15 +1,16 @@
-use crate::model::Uuid;
-use serde::de::DeserializeOwned;
-use tiberius::{Query, Row};
+use crate::{
+    convert::TryFromRow,
+    model::user_info::{
+        UserInfoBy, UserInfoCreated, UserInfoForCreate, UserInfoForLogin, UserInfoRecord,
+    },
+};
+use lib_auth::pwd::{self, ContentToHash};
+
+use tiberius::{Query, Uuid};
 
 use crate::{
     ctx::Ctx,
     model::{error::QueryError, Error, ModelManager, Result},
-};
-
-use super::{
-    TryFromRow, UserInfo, UserInfoBy, UserInfoCreated, UserInfoForAuth, UserInfoForCreate,
-    UserInfoRecord,
 };
 
 pub struct UserInfoBmc;
@@ -55,42 +56,42 @@ impl UserInfoBmc {
         Ok(user_info_e)
     }
 
-    // pub async fn first_by_id<E>(_ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<E>
-    // where
-    //     E: UserInfoBy,
-    // {
-    //     let mut client = mm.db().get().await?;
-    //     let sql = "SELECT TOP 1 UserInfoID FROM dbo.UserInfo WHERE UserInfoID=@P1";
-    //     let mut query = Query::new(sql);
-    //     query.bind(id);
-    //     let row = query
-    //         .query(&mut client)
-    //         .await?
-    //         .into_row()
-    //         .await?
-    //         .ok_or(Error::UserInfo(QueryError::DataNotFound))?;
+    pub async fn first_by_id<E>(_ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<E>
+    where
+        E: UserInfoBy,
+    {
+        let mut client = mm.db().get().await?;
+        let sql = "SELECT TOP 1 * FROM dbo.UserInfo WHERE UserInfoID=@P1";
+        let mut query = Query::new(sql);
+        query.bind(id);
+        let row = query
+            .query(&mut client)
+            .await?
+            .into_row()
+            .await?
+            .ok_or(Error::UserInfo(QueryError::DataNotFound))?;
 
-    //     let user_info_e = E::try_from_row(row)?;
+        let user_info_e = E::try_from_row(row)?;
 
-    //     Ok(user_info_e)
-    // }
+        Ok(user_info_e)
+    }
 
     pub async fn update_pwd(ctx: &Ctx, mm: &ModelManager, id: Uuid, password: &str) -> Result<()> {
-        // FIXME: change to sql server
-        // let db = mm.db();
-        // let sql =
-        //     "UPDATE ONLY user_info:&id SET password = &password update_by = user_info:&update_by update_on = time::now();";
-        // let mut result = db
-        //     .query(sql)
-        //     .bind(("id", id))
-        //     .bind(("password", password))
-        //     .bind(("update_by", ctx.user_id()))
-        //     .await?;
+        let mut client = mm.db().get().await?;
+        let UserInfoForLogin { PasswordSalt, .. } = Self::get(ctx, mm, id).await?;
+        let password = pwd::hash_pwd(ContentToHash {
+            content: password.to_string(),
+            salt: PasswordSalt.unwrap_or_default(),
+        })
+        .await?;
 
-        // let _user_info: Option<UserInfo> = result.take(0)?;
-
-        // Ok(())
-        todo!()
+        // TODO: Create sp for update password
+        let sql = "UPDATE dbo.UserInfo SET [Password]=@P2 WHERE UserInfoID=@P1;";
+        let mut query = Query::new(sql);
+        query.bind(id);
+        query.bind(password);
+        let _query_stream = query.query(&mut client).await?;
+        Ok(())
     }
 
     pub async fn create(
@@ -98,74 +99,82 @@ impl UserInfoBmc {
         mm: &ModelManager,
         user_info_for_create: UserInfoForCreate,
     ) -> Result<UserInfoRecord> {
-        // FIXME: change to sql server
-        // // Verify Username in DB
-        // let user_info = UserInfoBmc::first_by_username::<UserInfoRecord>(
-        //     &ctx,
-        //     mm,
-        //     &user_info_for_create.username,
-        // )
-        // .await?;
-        // if let Some(_) = user_info {
-        //     return Err(Error::UsernameAlreadyExists);
-        // }
-        // let validate_username =
-        //     UserInfoBmc::validate_username(mm, &user_info_for_create.username).await?;
-        // if !validate_username {
-        //     return Err(Error::UsernameNotValidFormat);
-        // }
+        let UserInfoForCreate {
+            Username,
+            Email,
+            Name,
+            Password,
+        } = user_info_for_create;
 
-        // let db = mm.db();
+        let mut client = mm.db().get().await?;
 
-        // let user_id_create = ctx.user_id_thing();
+        {
+            let sql = "BEGIN TRANSACTION;";
+            let _stream = client.simple_query(sql).await?;
+        }
 
-        // let user_info_created = UserInfoCreated {
-        //     username: &user_info_for_create.username,
-        //     email: &user_info_for_create.username,
-        //     name: user_info_for_create.name,
-        //     password: user_info_for_create.password,
-        //     create_by: &user_id_create,
-        //     update_by: &user_id_create,
-        // };
+        let user_info_record = {
+            let sql = "EXEC dbo.sp_userinfo_create @Username = @P1, @Name = @P2, @Email = @P3, @CreateBy = @P4;";
+            let row = client
+                .query(sql, &[&Username, &Name, &Email, &ctx.user_id()])
+                .await?
+                .into_row()
+                .await?
+                .ok_or(Error::UserInfo(QueryError::NotReturnIDFromCreated));
+            match row {
+                Ok(r) => UserInfoRecord::try_from_row(r)?,
+                Err(e) => {
+                    let sql = "ROLLBACK;";
+                    let _stream = client.simple_query(sql).await?;
+                    return Err(e);
+                }
+            }
+        };
 
-        // let mut created: Vec<UserInfoRecord> =
-        //     db.create("user_info").content(user_info_created).await?;
+        let id = user_info_record
+            .UserInfoID
+            .ok_or(Error::UserInfo(QueryError::UserInfoRecordNotFound))?;
 
-        // let user_info = created.pop().ok_or(Error::DataNotFound)?;
+        let password = {
+            let sql = "SELECT PasswordSalt FROM dbo.UserInfo WHERE UserInfoID = @P1;";
+            let row = client
+                .query(sql, &[&id])
+                .await?
+                .into_row()
+                .await?
+                .ok_or(Error::UserInfo(QueryError::DataNotFound))?;
+            let UserInfoCreated { PasswordSalt } = UserInfoCreated::try_from_row(row)?;
 
-        // Ok(user_info)
-        todo!()
+            let password = pwd::hash_pwd(ContentToHash {
+                content: Password.to_string(),
+                salt: PasswordSalt.unwrap_or_default(),
+            })
+            .await?;
+
+            password
+        };
+
+        // TODO: Create sp for update password
+        let sql = "UPDATE dbo.UserInfo SET [Password]=@P2 WHERE UserInfoID=@P1;";
+        let row = client.query(sql, &[&id, &password]).await?.into_row().await;
+        match row {
+            Ok(_) => (),
+            Err(e) => {
+                let sql = "ROLLBACK;";
+                let _stream = client.simple_query(sql).await?;
+                return Err(Error::Tiberius(e));
+            }
+        }
+
+        {
+            let sql = "COMMIT;";
+            let _stream = client.simple_query(sql).await?;
+        }
+
+        Ok(user_info_record)
     }
 
-    pub async fn validate_password(mm: &ModelManager, hash: &str, password: &str) -> Result<bool> {
-        // FIXME: change to sql server
-        // let db = mm.db();
-
-        // let sql = "RETURN crypto::argon2::compare($hash, $pass)";
-
-        // let mut result = db
-        //     .query(sql)
-        //     .bind(("hash", hash))
-        //     .bind(("pass", password))
-        //     .await?;
-
-        // result
-        //     .take::<Option<bool>>(0)?
-        //     .ok_or(Error::CannotComparePasswordFromDB)
-        todo!()
-    }
-
-    pub async fn validate_username(mm: &ModelManager, username: &str) -> Result<bool> {
-        // FIXME: change to sql server
-        // let db = mm.db();
-
-        // let sql = "RETURN string::is::email($username);";
-
-        // let mut result = db.query(sql).bind(("username", username)).await?;
-
-        // result
-        //     .take::<Option<bool>>(0)?
-        //     .ok_or(Error::CannotValidateUsernameFromDB)
+    pub async fn list() -> () {
         todo!()
     }
 }

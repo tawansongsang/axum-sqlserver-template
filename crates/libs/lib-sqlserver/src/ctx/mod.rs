@@ -4,7 +4,7 @@ use self::error::{Error, Result};
 
 #[derive(Debug, Clone)]
 pub struct Ctx {
-    user_id: Option<i64>,
+    user_id: Option<String>,
 }
 
 impl Ctx {
@@ -13,7 +13,7 @@ impl Ctx {
         Ctx { user_id: root_id }
     }
 
-    pub fn new(user_id: Option<i64>) -> Result<Self> {
+    pub fn new(user_id: Option<String>) -> Result<Self> {
         if user_id.is_none() {
             Err(Error::CtxCannotNewRootCtx)
         } else {
@@ -21,7 +21,7 @@ impl Ctx {
         }
     }
 
-    pub fn user_id(&self) -> Option<i64> {
-        self.user_id
+    pub fn user_id(&self) -> Option<&str> {
+        self.user_id.as_deref()
     }
 }

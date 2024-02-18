@@ -8,6 +8,7 @@ use lib_sqlserver::{
     },
 };
 use serde::Serialize;
+use uuid::Uuid;
 
 use super::error::{Error, Result};
 use crate::web::{set_token_cookie, AUTH_TOKEN};
@@ -61,28 +62,34 @@ async fn inner_ctx_resolve(mm: State<ModelManager>, cookies: &Cookies) -> CtxExt
         .ok_or(CtxExtError::TokenNotInCookie)?;
 
     // -- Parse Token
-    let token: Token = token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
+    let token = token
+        .parse::<Token>()
+        .map_err(|_| CtxExtError::TokenWrongFormat)?;
 
-    // // -- Get UserInfoForAuth
-    // let user = UserInfoBmc::first_by_id::<UserInfoForAuth>(&Ctx::root_ctx(), &mm, &token.ident)
-    //     .await
-    //     .map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?;
+    // -- Get uuid from token string
+    let user_info_id =
+        Uuid::parse_str(token.ident.as_str()).map_err(|_| CtxExtError::TokenWrongFormat)?;
 
-    // let user = user.ok_or(CtxExtError::UserNotFound)?;
+    // -- Get UserInfoForAuth
+    let user = UserInfoBmc::first_by_id::<UserInfoForAuth>(&Ctx::root_ctx(), &mm, user_info_id)
+        .await
+        .map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?;
 
-    // // -- Validate Token
-    // validate_web_token(&token, user.token_salt).map_err(|_| CtxExtError::FailValidate)?;
+    // -- Get Token Salt
+    let token_salt = user.TokenSalt.ok_or(CtxExtError::TokenSaltNotFound)?;
 
-    // // -- Update Token
-    // let user_id = &user.id.id.to_raw();
-    // set_token_cookie(cookies, user_id, user.token_salt)
-    //     .map_err(|_| CtxExtError::CannotSetTokenCookie)?;
+    // -- Validate Token
+    validate_web_token(&token, token_salt).map_err(|_| CtxExtError::FailValidate)?;
 
-    // // -- Create CtxExtResult
-    // Ctx::new(Some(user.id.to_raw()))
-    //     .map(CtxW)
-    //     .map_err(|ex| CtxExtError::CtxCreateFail(ex.to_string()))
-    todo!()
+    // -- Update Token
+    let user_id = user_info_id.to_string();
+    set_token_cookie(cookies, user_id.as_str(), token_salt)
+        .map_err(|_| CtxExtError::CannotSetTokenCookie)?;
+
+    // -- Create CtxExtResult
+    Ctx::new(Some(user_id))
+        .map(CtxW)
+        .map_err(|ex| CtxExtError::CtxCreateFail(ex.to_string()))
 }
 
 // region:    --- Ctx Extractor
@@ -115,9 +122,10 @@ type CtxExtResult = std::result::Result<CtxW, CtxExtError>;
 pub enum CtxExtError {
     TokenNotInCookie,
     TokenWrongFormat,
+    TokenSaltNotFound,
 
     ModelAccessError(String),
-    UserNotFound,
+    // UserNotFound,
     FailValidate,
     CannotSetTokenCookie,
     CtxCreateFail(String),

@@ -7,14 +7,15 @@ pub mod user_info;
 pub use self::conditions::*;
 use tracing::log::info;
 
-pub use self::error::{Error, Result};
+pub use self::error::{Error, QueryError, Result};
 
 use self::store::{new_db_pool, Db};
 
 use crate::convert::TryFromRow;
 use serde::Deserialize;
 use tiberius::time::time::PrimitiveDateTime;
-use tiberius::Uuid;
+// pub for only example sqlserver
+pub use tiberius::{Query, Uuid};
 
 #[derive(Clone)]
 pub struct ModelManager {
@@ -60,26 +61,26 @@ impl ModelManager {
             "STARTUP", "Sql Server Version: ", result
         );
 
-        let stream = client
-            .simple_query(
-                "SELECT GETDATE() as CreateOn, NEWID() as ID, CAST(NULL as varchar) as Foo;",
-            )
-            .await
-            .unwrap();
+        // let stream = client
+        //     .simple_query(
+        //         "SELECT GETDATE() as CreateOn, NEWID() as ID, CAST(NULL as varchar) as Foo;",
+        //     )
+        //     .await
+        //     .unwrap();
 
-        let row = stream.into_row().await.unwrap().unwrap();
-        println!("{:?}", row);
+        // let row = stream.into_row().await.unwrap().unwrap();
+        // println!("{:?}", row);
 
-        let data = row.get::<PrimitiveDateTime, usize>(0);
-        let date_time = data.unwrap();
-        let data = row.get::<Uuid, usize>(1);
-        let uuid = data.unwrap();
+        // let data = row.get::<PrimitiveDateTime, usize>(0);
+        // let date_time = data.unwrap();
+        // let data = row.get::<Uuid, usize>(1);
+        // let uuid = data.unwrap();
 
-        println!("{:?}", date_time);
-        println!("{:?}", uuid);
+        // println!("{:?}", date_time);
+        // println!("{:?}", uuid);
 
-        let test = Test::try_from_row(row);
-        println!("{:?}", test);
+        // let test = Test::try_from_row(row);
+        // println!("{:?}", test);
     }
 }
 
@@ -88,7 +89,7 @@ impl ModelManager {
 pub struct Test {
     pub CreateOn: Option<PrimitiveDateTime>,
     pub ID: Option<Uuid>,
-    pub Food: Option<String>,
+    pub Foo: Option<String>,
 }
 
 // impl TryFrom<Row> for Test {

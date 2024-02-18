@@ -23,6 +23,16 @@ pub enum Error {
     LoginFailPwdNotMatching {
         user_id: String,
     },
+    LoginFailPwdSaltNotFound {
+        user_id: String,
+    },
+    LoginFailtTokenSaltNotFound {
+        user_id: String,
+    },
+    LoginFailUserInfoIDNotFound,
+    // -- Register
+    RegisterUserInfoRecordNotFound,
+    RegisterUsernameAlreadyExist,
     // -- CtxExtError
     #[from]
     CtxExt(web::mw_auth::CtxExtError),
@@ -81,6 +91,12 @@ impl Error {
             | LoginFailUserHasNoPwd { .. }
             | LoginFailPwdNotMatching { .. } => (StatusCode::FORBIDDEN, ClientError::LOGIN_FAIL),
 
+            // -- Register
+            RegisterUsernameAlreadyExist => (
+                StatusCode::BAD_REQUEST,
+                ClientError::USERNAME_ALREADY_EXISTS,
+            ),
+
             // -- Auth
             CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
 
@@ -88,7 +104,6 @@ impl Error {
             //     StatusCode::BAD_REQUEST,
             //     ClientError::ENTITY_NOT_FOUND { entity, id: *id },
             // ),
-
             // Model(model::Error::UsernameAlreadyExists) => (
             //     StatusCode::BAD_REQUEST,
             //     ClientError::USERNAME_ALREADY_EXISTS,

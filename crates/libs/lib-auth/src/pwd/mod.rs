@@ -1,5 +1,5 @@
 mod error;
-mod scheme;
+pub mod scheme;
 
 use std::str::FromStr;
 
@@ -7,7 +7,7 @@ use lazy_regex::regex_captures;
 use uuid::Uuid;
 
 pub use self::error::{Error, Result};
-use self::scheme::{DEFAULT_SCHEME, get_scheme, Scheme, SchemeStatus};
+use self::scheme::{get_scheme, Scheme, SchemeStatus, DEFAULT_SCHEME};
 
 // region:    --- Types
 /// The clean content to hash, with the salt.
@@ -18,22 +18,19 @@ use self::scheme::{DEFAULT_SCHEME, get_scheme, Scheme, SchemeStatus};
 #[cfg_attr(test, derive(Clone))]
 pub struct ContentToHash {
     pub content: String, // Clear content.
-    pub salt: Uuid
+    pub salt: Uuid,
 }
 // endregion: --- Types
 
 /// Hash the password with the default scheme.
 pub async fn hash_pwd(to_hash: ContentToHash) -> Result<String> {
-	tokio::task::spawn_blocking(move || hash_for_scheme(DEFAULT_SCHEME, to_hash))
-		.await
-		.map_err(|_| Error::FailSpawnBlockForHash)?
+    tokio::task::spawn_blocking(move || hash_for_scheme(DEFAULT_SCHEME, to_hash))
+        .await
+        .map_err(|_| Error::FailSpawnBlockForHash)?
 }
 
 /// Validate if an ContentToHash matches.
-pub async fn validate_pwd(
-    to_hash: ContentToHash,
-    pwd_ref: String,
-) -> Result<SchemeStatus> {
+pub async fn validate_pwd(to_hash: ContentToHash, pwd_ref: String) -> Result<SchemeStatus> {
     let PwdParts {
         scheme_name,
         hashed,
@@ -48,25 +45,21 @@ pub async fn validate_pwd(
 
     // Note: Since validate might take some time depending on algo
     //       doing a spawn_blocking to avoid
-    tokio::task::spawn_blocking(move || {
-        validate_for_scheme(&scheme_name, to_hash, hashed)
-    })
-    .await
-    .map_err(|_| Error::FailSpawnBlockForValidate)??;
+    tokio::task::spawn_blocking(move || validate_for_scheme(&scheme_name, to_hash, hashed))
+        .await
+        .map_err(|_| Error::FailSpawnBlockForValidate)??;
 
-    // validate_for_scheme(&scheme_name, to_hash_ &hashed).await?;
+    // validate_for_scheme(&scheme_name, to_hash, hashed)?;
     Ok(scheme_status)
 }
 
 fn validate_for_scheme(scheme_name: &str, to_hash: ContentToHash, pwd_ref: String) -> Result<()> {
-    let _ = get_scheme(scheme_name)?
-                .validate(&to_hash, &pwd_ref);
+    let _ = get_scheme(scheme_name)?.validate(&to_hash, &pwd_ref)?;
     Ok(())
 }
 
 fn hash_for_scheme(scheme_name: &str, to_hash: ContentToHash) -> Result<String> {
-    let pwd_hashed = get_scheme(scheme_name)?
-                        .hash(&to_hash).unwrap();
+    let pwd_hashed = get_scheme(scheme_name)?.hash(&to_hash).unwrap();
 
     Ok(format!("#{scheme_name}#{pwd_hashed}"))
 }

@@ -1,0 +1,13 @@
+@host = localhost
+@port = 8080
+
+###
+POST http://{{host}}:{{port}}/api/register HTTP/1.1
+Content-Type: application/json
+
+{
+    "username": "demo4@demo.com",
+    "name": "demo4",
+    "password": "demo4"
+}
+

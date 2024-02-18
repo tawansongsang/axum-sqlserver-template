@@ -14,9 +14,9 @@ CREATE TABLE dbo.UserInfo
     CreateBy UNIQUEIDENTIFIER FOREIGN KEY REFERENCES dbo.UserInfo(UserInfoID),
     CreateOn DATETIME2 DEFAULT GETDATE(),
     UpdateBy UNIQUEIDENTIFIER FOREIGN KEY REFERENCES dbo.UserInfo(UserInfoID),
-    UpdateOn DATETIME2,
-    Active CHAR(1) NOT NULL CHECK (Active = 'Y' OR Active = 'N'),
-    Deleted CHAR(1) NOT NULL CHECK (Deleted = 'Y' OR Deleted = 'N'),
+    UpdateOn DATETIME2 DEFAULT GETDATE(),
+    Active CHAR(1) NOT NULL CHECK (Active = 'Y' OR Active = 'N') DEFAULT 'Y',
+    Deleted CHAR(1) NOT NULL CHECK (Deleted = 'Y' OR Deleted = 'N') DEFAULT 'N',
     DeleteOn DATETIME2,
     DeleteBy UNIQUEIDENTIFIER FOREIGN KEY REFERENCES dbo.UserInfo(UserInfoID)
 );

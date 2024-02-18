@@ -4,7 +4,9 @@ use super::{Error, Result};
 use crate::config::auth_config;
 use crate::pwd::{scheme::Scheme, ContentToHash};
 use argon2::password_hash::SaltString;
-use argon2::{Algorithm, Argon2, Params, Version, PasswordHasher as _, PasswordHash, PasswordVerifier};
+use argon2::{
+    Algorithm, Argon2, Params, PasswordHash, PasswordHasher as _, PasswordVerifier, Version,
+};
 
 pub struct Scheme02;
 
@@ -12,8 +14,7 @@ impl Scheme for Scheme02 {
     fn hash(&self, to_hash: &ContentToHash) -> Result<String> {
         let argon2 = get_argon2();
 
-        let salt_b64 = SaltString::encode_b64(to_hash.salt.as_bytes())
-            .map_err(|_| Error::Salt)?;
+        let salt_b64 = SaltString::encode_b64(to_hash.salt.as_bytes()).map_err(|_| Error::Salt)?;
 
         let pwd = argon2
             .hash_password(to_hash.content.as_bytes(), &salt_b64)
@@ -26,8 +27,7 @@ impl Scheme for Scheme02 {
     fn validate(&self, to_hash: &ContentToHash, pwd_ref: &str) -> Result<()> {
         let argon2 = get_argon2();
 
-        let parsed_hash_ref = PasswordHash::new(pwd_ref)
-            .map_err(|_| Error::Hash)?;
+        let parsed_hash_ref = PasswordHash::new(pwd_ref).map_err(|_| Error::Hash)?;
 
         argon2
             .verify_password(to_hash.content.as_bytes(), &parsed_hash_ref)
@@ -53,28 +53,43 @@ fn get_argon2() -> &'static Argon2<'static> {
 // region:    --- Tests
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use crate::pwd::ContentToHash;
-	use anyhow::Result;
-	use uuid::Uuid;
+    use super::*;
+    use crate::pwd::ContentToHash;
+    use anyhow::Result;
+    use uuid::Uuid;
 
-	#[test]
-	fn test_scheme_02_hash_into_b64u_ok() -> Result<()> {
-		// -- Setup & Fixtures
-		let fx_to_hash = ContentToHash {
-			content: "hello world".to_string(),
-			salt: Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?,
-		};
-		let fx_res = "$argon2id$v=19$m=19456,t=2,p=1$8F6JYdatQIaeeKbeBl5UUw$TaRnmmbDdQ1aTzk2qQ2yQzPQoZfnKqhrfuTH/TRP5V4";
+    #[test]
+    fn test_scheme_02_hash_into_b64u_ok() -> Result<()> {
+        // -- Setup & Fixtures
+        let fx_to_hash = ContentToHash {
+            content: "hello world".to_string(),
+            salt: Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?,
+        };
+        let fx_res = "$argon2id$v=19$m=19456,t=2,p=1$8F6JYdatQIaeeKbeBl5UUw$TaRnmmbDdQ1aTzk2qQ2yQzPQoZfnKqhrfuTH/TRP5V4";
 
-		// -- Exec
-		let scheme = Scheme02;
-		let res = scheme.hash(&fx_to_hash)?;
+        // -- Exec
+        let scheme = Scheme02;
+        let res = scheme.hash(&fx_to_hash)?;
 
-		// -- Check
-		assert_eq!(res, fx_res);
+        // -- Check
+        assert_eq!(res, fx_res);
 
-		Ok(())
-	}
+        Ok(())
+    }
+
+    #[test]
+    fn test_scheme_02_validate_ok() -> Result<()> {
+        // -- Setup & Fixtures
+        let fx_to_hash = ContentToHash {
+            content: "demo1".to_string(),
+            salt: Uuid::parse_str("ffcb9d04-a7b6-4839-bb6a-389179d01d60")?,
+        };
+        let pwd_ref = "$argon2id$v=19$m=19456,t=2,p=1$/8udBKe2SDm7ajiRedAdYA$AAd/h6w7RbRz5OIv5kzqbGlliWQ1xOFfQ0LUG/Hbz90";
+
+        let scheme = Scheme02;
+        let _valid = scheme.validate(&fx_to_hash, pwd_ref).unwrap();
+
+        Ok(())
+    }
 }
 // endregion: --- Tests
