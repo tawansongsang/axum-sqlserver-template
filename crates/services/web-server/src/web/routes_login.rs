@@ -3,10 +3,13 @@ use crate::web::{self, remove_token_cookie};
 use super::error::{Error, Result};
 
 use axum::{extract::State, routing::post, Json, Router};
+use lib_auth::pwd::{self, scheme::SchemeStatus, ContentToHash};
 use lib_sqlserver::{
     ctx::Ctx,
     model::{
-        user_info::{bmc::UserInfoBmc, UserInfoForCreate, UserInfoForLogin},
+        user_info::{
+            bmc::UserInfoBmc, UserInfo, UserInfoForCreate, UserInfoForLogin, UserInfoRecord,
+        },
         ModelManager,
     },
 };
@@ -29,48 +32,76 @@ async fn api_login_handler(
     cookies: Cookies,
     Json(payload): Json<LoginPayload>,
 ) -> Result<Json<Value>> {
-    todo!()
-    // debug!("{:<12} - api_login_handler", "HANLDER");
+    debug!("{:<12} - api_login_handler", "HANLDER");
 
-    // let LoginPayload { username, password } = payload;
-    // let root_ctx = Ctx::root_ctx();
+    let LoginPayload { username, password } = payload;
+    let root_ctx = Ctx::root_ctx();
 
-    // // -- Get the user.
-    // let user: UserInfoForLogin = UserInfoBmc::first_by_username(&root_ctx, &mm, &username)
-    //     .await?
-    //     .ok_or(Error::LoginFailUsernameNotFound)?;
+    // -- Get the user.
+    let user = UserInfoBmc::first_by_username::<UserInfoForLogin>(&root_ctx, &mm, &username)
+        .await
+        .map_err(|e| match e {
+            lib_sqlserver::model::Error::UserInfo(
+                lib_sqlserver::model::QueryError::DataNotFound,
+            ) => Error::LoginFailUsernameNotFound,
+            _ => Error::Model(e),
+        })?;
 
-    // let user_id = user.id.id.to_raw();
+    let user_id = user.UserInfoID.ok_or(Error::LoginFailUserInfoIDNotFound)?;
 
-    // // -- Validate the password.
-    // let Some(hash) = user.password else {
-    //     return Err(Error::LoginFailUserHasNoPwd { user_id });
-    // };
+    // -- Validate the password.
+    let Some(password_hash) = user.Password else {
+        return Err(Error::LoginFailUserHasNoPwd {
+            user_id: user_id.to_string(),
+        });
+    };
 
-    // let scheme_status = UserInfoBmc::validate_password(&mm, &hash, &password).await?;
+    let Some(password_salt) = user.PasswordSalt else {
+        return Err(Error::LoginFailPwdSaltNotFound {
+            user_id: user_id.to_string(),
+        });
+    };
 
-    // if !scheme_status {
-    //     return Err(Error::LoginFailPwdNotMatching { user_id });
-    // }
+    let scheme_status = pwd::validate_pwd(
+        ContentToHash {
+            salt: password_salt,
+            content: password.clone(),
+        },
+        password_hash,
+    )
+    .await
+    .map_err(|_| Error::LoginFailPwdNotMatching {
+        user_id: user_id.to_string(),
+    })?;
 
-    // // -- Set web token
-    // web::set_token_cookie(&cookies, &user_id, user.token_salt)?;
+    // -- Update password scheme if needed
+    if let SchemeStatus::Outdated = scheme_status {
+        debug!("pwd encrypt scheme outdated, upgrading.");
+        UserInfoBmc::update_pwd(&root_ctx, &mm, user_id, password.as_str()).await?;
+    }
 
-    // // -- Create the success body
-    // let body = Json(json!({
-    //     "result": {
-    //         "success": true,
-    //     },
-    //     "data": {
-    //         "id": user_id,
-    //         "email": user.username,
-    //         "name": user.name,
-    //         "role": user.role,
-    //         "image": null,
-    //     }
-    // }));
+    let token_salt = user.TokenSalt.ok_or(Error::LoginFailtTokenSaltNotFound {
+        user_id: user_id.to_string(),
+    })?;
 
-    // Ok(body)
+    // -- Set web token
+    web::set_token_cookie(&cookies, user_id.to_string().as_str(), token_salt)?;
+
+    // -- Create the success body
+    let body = Json(json!({
+        "result": {
+            "success": true,
+        },
+        "data": {
+            "id": user_id,
+            "email": user.Username,
+            "name": user.Name,
+            "role": user.Role,
+            "image": null,
+        }
+    }));
+
+    Ok(body)
 }
 
 #[derive(Debug, Deserialize)]
@@ -85,23 +116,22 @@ async fn api_logout_handler(
     cookies: Cookies,
     Json(payload): Json<LogoutPayload>,
 ) -> Result<Json<Value>> {
-    todo!()
-    // debug!("{:<12} - api_logout_handler", "HANLDER");
+    debug!("{:<12} - api_logout_handler", "HANLDER");
 
-    // let should_logout = payload.logout;
+    let should_logout = payload.logout;
 
-    // if should_logout {
-    //     remove_token_cookie(&cookies)?;
-    // }
+    if should_logout {
+        remove_token_cookie(&cookies)?;
+    }
 
-    // // -- Create the success body.
-    // let body = Json(json!({
-    //     "resutl": {
-    //         "logout": should_logout
-    //     }
-    // }));
+    // -- Create the success body.
+    let body = Json(json!({
+        "resutl": {
+            "logout": should_logout
+        }
+    }));
 
-    // Ok(body)
+    Ok(body)
 }
 
 #[derive(Debug, Deserialize)]
@@ -115,31 +145,44 @@ async fn api_register_handler(
     _cookies: Cookies,
     Json(payload): Json<RegisterPayload>,
 ) -> Result<Json<Value>> {
-    todo!()
-    // debug!("{:<12} - api_register_handler", "HANLDER");
-    // let root_ctx = Ctx::root_ctx();
+    debug!("{:<12} - api_register_handler", "HANLDER");
+    let root_ctx = Ctx::root_ctx();
 
-    // let RegisterPayload {
-    //     username,
-    //     name,
-    //     password,
-    // } = payload;
+    let RegisterPayload {
+        username,
+        name,
+        password,
+    } = payload;
 
-    // let user_info_for_create = UserInfoForCreate {
-    //     username,
-    //     name,
-    //     password,
-    // };
+    let user_info_record_checked =
+        UserInfoBmc::first_by_username::<UserInfoRecord>(&root_ctx, &mm, &username).await;
 
-    // let _user_info_record = UserInfoBmc::create(&root_ctx, &mm, user_info_for_create).await?;
+    if let Ok(_user_info_record) = user_info_record_checked {
+        return Err(Error::RegisterUsernameAlreadyExist);
+    }
 
-    // let body = Json(json!({
-    //     "result": {
-    //         "success": true
-    //     }
-    // }));
+    let user_info_for_create = UserInfoForCreate {
+        Username: username.clone(),
+        Email: username,
+        Name: name,
+        Password: password,
+    };
 
-    // Ok(body)
+    let user_info_record = UserInfoBmc::create(&root_ctx, &mm, user_info_for_create).await?;
+    let user_info_id = user_info_record
+        .UserInfoID
+        .ok_or(Error::RegisterUserInfoRecordNotFound)?;
+
+    let user_info = UserInfoBmc::first_by_id::<UserInfo>(&root_ctx, &mm, user_info_id).await?;
+
+    let body = Json(json!({
+        "result": {
+            "success": true
+        },
+        "data": user_info,
+    }));
+
+    Ok(body)
 }
 
 #[derive(Debug, Deserialize)]

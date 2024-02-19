@@ -1,3 +1,4 @@
+use lib_auth::pwd;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -11,6 +12,8 @@ pub enum Error {
     // -- Modules
     #[from]
     Store(store::Error),
+    #[from]
+    Pwd(pwd::Error),
     UserInfo(QueryError),
 
     // -- Externals
@@ -31,4 +34,7 @@ impl std::error::Error for Error {}
 #[derive(Debug, Serialize)]
 pub enum QueryError {
     DataNotFound,
+    NotReturnIDFromCreated,
+    UserInfoRecordNotFound,
+    NoTokenSalt,
 }

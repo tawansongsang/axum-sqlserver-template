@@ -7,80 +7,81 @@ use serde::{Deserialize, Serialize};
 use tiberius::time::time::PrimitiveDateTime;
 use tiberius::{Row, Uuid};
 
-#[derive(Debug, Deserialize)]
+#[allow(non_snake_case)]
+#[derive(Debug, Serialize, Deserialize, TryFromRow)]
 pub struct UserInfo {
-    pub id: Option<Uuid>,
-    pub username: Option<String>,
-    pub name: Option<String>,
-    pub email: Option<String>,
-    pub email_verified: Option<PrimitiveDateTime>,
+    pub UserInfoID: Option<Uuid>,
+    pub Username: Option<String>,
+    pub Name: Option<String>,
+    pub Email: Option<String>,
+    pub EmailVerified: Option<PrimitiveDateTime>,
 
     // -- pwd and token info
-    pub password: Option<String>,
-    pub password_salt: Option<Uuid>,
-    pub token_salt: Option<Uuid>,
-    pub create_by: Option<Uuid>,
-    pub create_on: Option<PrimitiveDateTime>,
-    pub update_by: Option<Uuid>,
-    pub update_on: Option<PrimitiveDateTime>,
+    pub Password: Option<String>,
+    pub PasswordSalt: Option<Uuid>,
+    pub TokenSalt: Option<Uuid>,
+    pub CreateBy: Option<Uuid>,
+    pub CreateOn: Option<PrimitiveDateTime>,
+    pub UpdateBy: Option<Uuid>,
+    pub UpdateOn: Option<PrimitiveDateTime>,
 }
 
+#[allow(non_snake_case)]
 #[derive(Debug, Deserialize, TryFromRow)]
 pub struct UserInfoGet {
-    pub id: Option<Uuid>,
-    pub username: Option<String>,
-    pub email: Option<String>,
-    pub email_verified: Option<PrimitiveDateTime>,
-    pub name: Option<String>,
-    pub create_by: Option<Uuid>,
-    pub create_on: Option<PrimitiveDateTime>,
-    pub update_by: Option<Uuid>,
-    pub update_on: Option<PrimitiveDateTime>,
+    pub UserInfoID: Option<Uuid>,
+    pub Username: Option<String>,
+    pub Email: Option<String>,
+    pub EmailVerified: Option<PrimitiveDateTime>,
+    pub Name: Option<String>,
+    pub CreateBy: Option<Uuid>,
+    pub CreateOn: Option<PrimitiveDateTime>,
+    pub UpdateBy: Option<Uuid>,
+    pub UpdateOn: Option<PrimitiveDateTime>,
 }
 
+#[allow(non_snake_case)]
 #[derive(Debug, Serialize)]
 pub struct UserInfoForCreate {
-    pub username: String,
-    pub email: String,
-    pub email_verified: PrimitiveDateTime,
-    pub name: String,
-    pub password: String,
+    pub Username: String,
+    pub Email: String,
+    // pub email_verified: PrimitiveDateTime,
+    pub Name: String,
+    pub Password: String,
 }
 
-#[derive(Debug, Serialize)]
+#[allow(non_snake_case)]
+#[derive(Debug, Deserialize, TryFromRow)]
 pub struct UserInfoCreated {
-    pub username: String,
-    pub email: String,
-    pub email_verified: PrimitiveDateTime,
-    pub name: String,
-    pub password: String,
-    pub create_by: Option<Uuid>,
-    pub update_by: Option<Uuid>,
+    pub PasswordSalt: Option<Uuid>,
 }
 
+#[allow(non_snake_case)]
 #[derive(Debug, Deserialize, TryFromRow)]
 pub struct UserInfoForLogin {
-    pub id: Option<Uuid>,
-    pub username: Option<String>,
-    pub name: Option<String>,
-    pub password: Option<String>, // encrypted, #_scheme_id_#....
-    pub password_salt: Option<Uuid>,
-    pub token_salt: Option<Uuid>,
-    pub role: Option<String>,
+    pub UserInfoID: Option<Uuid>,
+    pub Username: Option<String>,
+    pub Name: Option<String>,
+    pub Password: Option<String>, // encrypted, #_scheme_id_#....
+    pub PasswordSalt: Option<Uuid>,
+    pub TokenSalt: Option<Uuid>,
+    pub Role: Option<String>,
 }
 
+#[allow(non_snake_case)]
 #[derive(Debug, Deserialize, TryFromRow)]
 pub struct UserInfoForAuth {
-    pub id: Option<Uuid>,
-    pub username: Option<String>,
+    pub UserInfoID: Option<Uuid>,
+    pub Username: Option<String>,
 
     // -- token info
-    pub token_salt: Option<Uuid>,
+    pub TokenSalt: Option<Uuid>,
 }
 
-#[derive(Debug, Deserialize)]
+#[allow(non_snake_case)]
+#[derive(Debug, Deserialize, TryFromRow)]
 pub struct UserInfoRecord {
-    pub id: Option<Uuid>,
+    pub UserInfoID: Option<Uuid>,
 }
 
 /// Marker Trait
@@ -88,4 +89,7 @@ pub trait UserInfoBy: DeserializeOwned + TryFromRow<Row> {}
 
 impl UserInfoBy for UserInfoForAuth {}
 impl UserInfoBy for UserInfoGet {}
+impl UserInfoBy for UserInfo {}
 impl UserInfoBy for UserInfoForLogin {}
+impl UserInfoBy for UserInfoRecord {}
+impl UserInfoBy for UserInfoCreated {}

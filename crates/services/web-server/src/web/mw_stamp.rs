@@ -19,20 +19,19 @@ pub struct ReqStamp {
 }
 
 pub async fn mw_req_stamp(mut req: Request<Body>, next: Next) -> Result<Response> {
-    todo!()
-    // debug!("{:<12} - mw_req_stamp_resolver", "MIDDLEWARE");
+    debug!("{:<12} - mw_req_stamp_resolver", "MIDDLEWARE");
 
-    // let time_in = now_utc();
-    // let uuid = Uuid::new_v4();
+    let time_in = now_utc();
+    let uuid = Uuid::new_v4();
 
-    // debug!(
-    //     "{:<12} - mw_req_stamp_resolver - {:?}",
-    //     "MODDLEWARE", time_in
-    // );
+    debug!(
+        "{:<12} - mw_req_stamp_resolver - {:?}",
+        "MODDLEWARE", time_in
+    );
 
-    // req.extensions_mut().insert(ReqStamp { uuid, time_in });
+    req.extensions_mut().insert(ReqStamp { uuid, time_in });
 
-    // Ok(next.run(req).await)
+    Ok(next.run(req).await)
 }
 
 // region:    --- ReqStamp Extractor
