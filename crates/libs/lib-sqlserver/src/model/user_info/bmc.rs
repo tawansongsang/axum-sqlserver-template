@@ -134,6 +134,7 @@ impl UserInfoBmc {
         // let user_info = created.pop().ok_or(Error::DataNotFound)?;
 
         // Ok(user_info)
+
         todo!()
     }
 
