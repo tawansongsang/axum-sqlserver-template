@@ -1,0 +1,6 @@
+INSERT INTO DbTemplate.dbo.Task
+    (Title, CreateBy , UpdateBy)
+OUTPUT
+Inserted.TaskID
+VALUES
+    ('Test Title', 'AE20D4CF-2806-40F8-887B-A3B6AEF03FD0', 'AE20D4CF-2806-40F8-887B-A3B6AEF03FD0');

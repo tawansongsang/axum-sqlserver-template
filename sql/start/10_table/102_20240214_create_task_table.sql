@@ -9,7 +9,7 @@ CREATE TABLE dbo.Task
     CreateOn DATETIME2 NOT NULL DEFAULT GETDATE(),
     UpdateBy UNIQUEIDENTIFIER NOT NULL FOREIGN KEY REFERENCES dbo.UserInfo(UserInfoID),
     UpdateOn DATETIME2 NOT NULL DEFAULT GETDATE(),
-    Deleted CHAR(1) NOT NULL CHECK (Deleted = 'Y' OR Deleted = 'N'),
+    Deleted CHAR(1) NOT NULL CHECK (Deleted = 'Y' OR Deleted = 'N') DEFAULT 'N',
     DeleteOn DATETIME2,
     DeleteBy UNIQUEIDENTIFIER FOREIGN KEY REFERENCES dbo.UserInfo(UserInfoID)
 );

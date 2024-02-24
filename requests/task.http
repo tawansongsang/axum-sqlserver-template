@@ -13,7 +13,7 @@ content-type: application/json
     "method": "create_task",
     "params": {
         "data": {
-            "title": "task from request http 1"
+            "Title": "task from request http 1"
         }
     }
 }
@@ -28,7 +28,7 @@ content-type: application/json
     "params": {
         "filters": [
             {
-                "id": "task:8c4c7g33um9xsqpyxmqx"
+                "TaskID": "A1044F8D-1202-418C-9361-DE8B6E717152"
             }
         ],
         "list_options": {
@@ -36,7 +36,7 @@ content-type: application/json
             "limit": 50,
             "orderby": [
                 {
-                    "field": "create_on",
+                    "field": "CreateOn",
                     "is_desc": true
                 }
             ]
@@ -51,9 +51,10 @@ content-type: application/json
     "id": "1",
     "method": "update_task",
     "params": {
-        "id": "bw7g5oqftf3kgosgsio3",
+        "id": "A1044F8D-1202-418C-9361-DE8B6E717152",
         "data": {
-            "title": "task from request http 1 updated"
+            "Title": "task from request http 1 updated",
+            "Done": false
         }
     }
 }
@@ -66,7 +67,7 @@ content-type: application/json
     "id": "1",
     "method": "delete_task",
     "params": {
-        "id": "bw7g5oqftf3kgosgsio3"
+        "id": "CF367697-B795-4C6F-815D-CF42EDED39B6"
     }
 }
 

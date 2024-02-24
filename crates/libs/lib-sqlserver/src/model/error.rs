@@ -9,6 +9,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[serde_as]
 #[derive(Debug, derive_more::From, Serialize)]
 pub enum Error {
+    UserIdNotFound,
+    DataNotFoundFromCreated,
+    UpdateError(String),
+
     // -- Modules
     #[from]
     Store(store::Error),
@@ -21,6 +25,8 @@ pub enum Error {
     Bb8(#[serde_as(as = "DisplayFromStr")] bb8::RunError<bb8_tiberius::Error>),
     #[from]
     Tiberius(#[serde_as(as = "DisplayFromStr")] tiberius::error::Error),
+    #[from]
+    Uuid(#[serde_as(as = "DisplayFromStr")] uuid::Error),
 }
 
 impl std::fmt::Display for Error {

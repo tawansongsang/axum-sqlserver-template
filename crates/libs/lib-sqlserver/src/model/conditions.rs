@@ -46,13 +46,13 @@ impl ListOptions {
     fn gen_limit(&self) -> String {
         let mut limit_con = String::new();
 
-        if let Some(limit) = &self.limit {
-            let condition = format!("LIMIT {} ", limit);
+        if let Some(start) = &self.start {
+            let condition = format!("OFFSET {} ROWS ", start);
             limit_con.push_str(&condition);
         }
 
-        if let Some(start) = &self.start {
-            let condition = format!("START {} ", start);
+        if let Some(limit) = &self.limit {
+            let condition = format!("FETCH NEXT {} ROWS ONLY", limit);
             limit_con.push_str(&condition);
         }
 
@@ -94,7 +94,7 @@ where
 macro_rules! create_eq_con {
     ($struct:ident ,$conditions:ident, $field:ident, $value:ident) => {
         if let Some($value) = &$struct.$value {
-            let condition = format!("{} = {}", stringify!($field), $value);
+            let condition = format!("{} = '{}'", stringify!($field), $value);
             $conditions.push(condition);
         };
     };
@@ -104,7 +104,7 @@ pub(crate) use create_eq_con;
 macro_rules! create_str_contain_con {
     ($struct:ident ,$conditions:ident, $field:ident, $value:ident) => {
         if let Some($value) = &$struct.$value {
-            let condition = format!("{} CONTAINS '{}'", stringify!($field), $value);
+            let condition = format!("{} LIKE N'%{}%'", stringify!($field), $value);
             $conditions.push(condition);
         };
     };
@@ -114,7 +114,7 @@ pub(crate) use create_str_contain_con;
 macro_rules! create_time_me_con {
     ($struct:ident ,$conditions:ident, $field:ident, $value:ident) => {
         if let Some($value) = &$struct.$value {
-            let condition = format!("{} >= {}", stringify!($field), $value);
+            let condition = format!("{} >= '{}'", stringify!($field), $value);
             $conditions.push(condition);
         };
     };
@@ -124,7 +124,7 @@ pub(crate) use create_time_me_con;
 macro_rules! create_time_le_con {
     ($struct:ident ,$conditions:ident, $field:ident, $value:ident) => {
         if let Some($value) = &$struct.$value {
-            let condition = format!("{} < {}", stringify!($field), $value);
+            let condition = format!("{} < '{}'", stringify!($field), $value);
             $conditions.push(condition);
         };
     };

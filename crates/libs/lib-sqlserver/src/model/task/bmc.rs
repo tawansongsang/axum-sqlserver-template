@@ -1,9 +1,12 @@
+use uuid::Uuid;
+
 use crate::{
+    convert::TryFromRow,
     ctx::Ctx,
     model::{conditions, task::TaskRecord, Error, ListOptions, ModelManager, Result},
 };
 
-use super::{Task, TaskFilter, TaskForCreate, TaskParamsForCreate, TaskParamsForUpdate};
+use super::{Task, TaskBy, TaskFilter, TaskParamsForCreate, TaskParamsForUpdate};
 
 pub struct TaskBmc;
 
@@ -13,53 +16,89 @@ impl TaskBmc {
         mm: &ModelManager,
         task_c: TaskParamsForCreate,
     ) -> Result<TaskRecord> {
-        let db = mm.db();
-        // FIXME: fixed fot sql server
-        // let user_id = ctx.user_id_thing().ok_or(Error::UserIdNotFound)?;
+        let mut client = mm.db().get().await?;
+        let user_id = ctx.user_id().ok_or(Error::UserIdNotFound)?;
 
-        // let task_c = TaskForCreate {
-        //     title: &task_c.title,
-        //     create_by: &user_id,
-        //     update_by: &user_id,
-        // };
+        {
+            let sql = "BEGIN TRANSACTION;";
+            let _stream = client.simple_query(sql).await?;
+        }
 
-        // let mut created: Vec<TaskRecord> = db.create("task").content(task_c).await?;
+        // TODO: Create sp for create task
+        let sql = r#"
+        INSERT INTO dbo.Task
+            (Title, CreateBy , UpdateBy)
+        OUTPUT Inserted.TaskID
+        VALUES
+            (@P1, @P2, @P3);
+        "#;
 
-        // let task_record = created.pop().ok_or(Error::DataNotFoundFromCreated);
+        let row = client
+            .query(sql, &[&task_c.Title, &user_id, &user_id])
+            .await?
+            .into_row()
+            .await?
+            .ok_or(Error::DataNotFoundFromCreated);
+        let task_record = match row {
+            Ok(r) => TaskRecord::try_from_row(r),
+            Err(e) => {
+                let sql = "ROLLBACK;";
+                let _stream = client.simple_query(sql).await?;
+                return Err(e);
+            }
+        };
 
-        // task_record
-        todo!()
+        {
+            let sql = "COMMIT;";
+            let _stream = client.simple_query(sql).await?;
+        }
+
+        task_record
     }
 
-    pub async fn get<'a>(_ctx: &Ctx, mm: &ModelManager, id: &str) -> Result<Task<'a>> {
-        let db = mm.db();
-        // let task_id = Thing::from(("task", id));
+    pub async fn get<E>(_ctx: &Ctx, mm: &ModelManager, task_id: &str) -> Result<E>
+    where
+        E: TaskBy,
+    {
+        let mut client = mm.db().get().await?;
+        let sql = r#"
+        SELECT *
+        FROM dbo.Task
+        WHERE TaskID = @P1;
+        "#;
 
-        // FIXME: fixed for sql server
-        // let task: Result<Task<'a>> = db.select(("task", id)).await?.ok_or(Error::DataNotFound);
+        let row = client
+            .query(sql, &[&task_id])
+            .await?
+            .into_row()
+            .await?
+            .ok_or(Error::DataNotFoundFromCreated)?;
 
-        // task
-        todo!()
+        let task_e = E::try_from_row(row);
+
+        task_e
     }
 
-    pub async fn list<'a>(
+    pub async fn list<E>(
         _ctx: &Ctx,
         mm: &ModelManager,
         filters: Option<Vec<TaskFilter>>,
         list_options: Option<ListOptions>,
-    ) -> Result<Vec<Task<'a>>> {
-        let db = mm.db();
-        // FIXME: fixed for sql server
-        // let conditions = conditions::gen_all_condition(filters, list_options);
+    ) -> Result<Vec<E>>
+    where
+        E: TaskBy,
+    {
+        let mut client = mm.db().get().await?;
 
-        // let sql = format!("SELECT * FROM task {}", conditions);
+        let conditions = conditions::gen_all_condition(filters, list_options);
 
-        // let mut response = db.query(sql).await?;
+        let sql = format!("SELECT * FROM dbo.Task {};", conditions);
 
-        // let tasks = response.take::<Vec<Task>>(0)?;
+        let row = client.simple_query(sql).await?.into_first_result().await?;
 
-        // Ok(tasks)
-        todo!()
+        let task_e: Result<Vec<E>> = row.into_iter().map(|r| E::try_from_row(r)).collect();
+
+        task_e
     }
 
     pub async fn update(
@@ -68,44 +107,82 @@ impl TaskBmc {
         task_id: &str,
         task_u: TaskParamsForUpdate,
     ) -> Result<()> {
-        let db = mm.db();
-        let task = Self::get(ctx, mm, task_id).await?;
-        // FIXME: fixed for sql server
-        // let user_id = ctx.user_id_thing().ok_or(Error::UserIdNotFound)?;
-        // let title = task_u.title.as_deref().unwrap_or(&task.title);
+        let mut client = mm.db().get().await?;
+        let user_id = ctx.user_id().ok_or(Error::UserIdNotFound)?;
 
-        // let sql = r#"UPDATE type::thing($table, $id) MERGE {
-        //     title: $title,
-        //     update_by: $update_by,
-        //     update_on: time::now(),
-        // };"#;
+        {
+            let sql = "BEGIN TRANSACTION;";
+            let _stream = client.simple_query(sql).await?;
+        }
 
-        // let mut response = db
-        //     .query(sql)
-        //     .bind(("table", "task"))
-        //     .bind(("id", task_id))
-        //     .bind(("title", title))
-        //     .bind(("update_by", user_id))
-        //     .await?;
+        let sql = r#"
+        UPDATE dbo.Task
+        SET Title = @P2, Done = @P3, UpdateOn = GETDATE(), UpdateBy = @P4
+        WHERE TaskID = @P1;
+        "#;
 
-        // let _record = response
-        //     .take::<Option<TaskRecord>>(0)?
-        //     .ok_or(Error::DataNotFoundFromUpdate)?;
+        let rows_affected = client
+            .execute(sql, &[&task_id, &task_u.Title, &task_u.Done, &user_id])
+            .await;
 
-        // Ok(())
-        todo!()
+        match rows_affected {
+            Ok(r) => {
+                if r.total() == 1 {
+                    ()
+                } else {
+                    return Err(Error::UpdateError("TaskIDNotFoundForUpdate".to_string()));
+                }
+            }
+            Err(e) => {
+                let sql = "ROLLBACK;";
+                let _stream = client.simple_query(sql).await?;
+                return Err(Error::UpdateError(e.to_string()));
+            }
+        };
+
+        {
+            let sql = "COMMIT;";
+            let _stream = client.simple_query(sql).await?;
+        }
+        Ok(())
     }
 
     pub async fn delete(_ctx: &Ctx, mm: &ModelManager, task_id: &str) -> Result<()> {
-        let db = mm.db();
-        // FIXME: fixed for sql server
-        // let _task: Result<TaskRecord> = db
-        //     .delete(("task", task_id))
-        //     .await?
-        //     .ok_or(Error::DataNotFoundFromDelete);
+        let mut client = mm.db().get().await?;
 
-        // Ok(())
-        todo!()
+        {
+            let sql = "BEGIN TRANSACTION;";
+            let _stream = client.simple_query(sql).await?;
+        }
+
+        let sql = r#"
+        DELETE FROM dbo.Task
+        WHERE TaskID = @P1;
+        "#;
+
+        let rows_affected = client.execute(sql, &[&task_id]).await;
+
+        match rows_affected {
+            Ok(r) => {
+                if r.total() == 1 {
+                    ()
+                } else {
+                    return Err(Error::UpdateError("TaskIDNotFoundForUpdate".to_string()));
+                }
+            }
+            Err(e) => {
+                let sql = "ROLLBACK;";
+                let _stream = client.simple_query(sql).await?;
+                return Err(Error::UpdateError(e.to_string()));
+            }
+        };
+
+        {
+            let sql = "COMMIT;";
+            let _stream = client.simple_query(sql).await?;
+        }
+
+        Ok(())
     }
 }
 
