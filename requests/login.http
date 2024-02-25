@@ -6,8 +6,8 @@ POST http://{{host}}:{{port}}/api/login HTTP/1.1
 Content-Type: application/json
 
 {
-    "username": "demo2@demo.com",
-    "password": "demo2"
+    "username": "demo1@demo.com",
+    "password": "demo1"
 }
 
 ###
