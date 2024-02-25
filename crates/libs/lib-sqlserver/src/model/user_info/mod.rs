@@ -20,24 +20,34 @@ pub struct UserInfo {
     pub Password: Option<String>,
     pub PasswordSalt: Option<Uuid>,
     pub TokenSalt: Option<Uuid>,
+    pub Role: Option<String>,
     pub CreateBy: Option<Uuid>,
     pub CreateOn: Option<PrimitiveDateTime>,
+    pub Active: Option<String>,
     pub UpdateBy: Option<Uuid>,
     pub UpdateOn: Option<PrimitiveDateTime>,
+    pub Deleted: Option<String>,
+    pub DeleteBy: Option<Uuid>,
+    pub DeleteOn: Option<PrimitiveDateTime>,
 }
 
 #[allow(non_snake_case)]
-#[derive(Debug, Deserialize, TryFromRow)]
+#[derive(Debug, Serialize, Deserialize, TryFromRow)]
 pub struct UserInfoGet {
     pub UserInfoID: Option<Uuid>,
     pub Username: Option<String>,
+    pub Name: Option<String>,
     pub Email: Option<String>,
     pub EmailVerified: Option<PrimitiveDateTime>,
-    pub Name: Option<String>,
+    pub Role: Option<String>,
     pub CreateBy: Option<Uuid>,
     pub CreateOn: Option<PrimitiveDateTime>,
+    pub Active: Option<String>,
     pub UpdateBy: Option<Uuid>,
     pub UpdateOn: Option<PrimitiveDateTime>,
+    pub Deleted: Option<String>,
+    pub DeleteBy: Option<Uuid>,
+    pub DeleteOn: Option<PrimitiveDateTime>,
 }
 
 #[allow(non_snake_case)]

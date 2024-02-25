@@ -30,9 +30,14 @@ pub enum Error {
         user_id: String,
     },
     LoginFailUserInfoIDNotFound,
+
     // -- Register
     RegisterUserInfoRecordNotFound,
     RegisterUsernameAlreadyExist,
+
+    // -- Session
+    NoUserIdInCookies,
+
     // -- CtxExtError
     #[from]
     CtxExt(web::mw_auth::CtxExtError),
@@ -53,6 +58,8 @@ pub enum Error {
     // -- Externals
     #[from]
     SerdeJson(#[serde_as(as = "DisplayFromStr")] serde_json::Error),
+    #[from]
+    Uuid(#[serde_as(as = "DisplayFromStr")] uuid::Error),
 }
 
 // region:    --- Axum IntoResponse

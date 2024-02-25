@@ -4,6 +4,7 @@ pub mod mw_res_map;
 pub mod mw_stamp;
 pub mod routes_login;
 pub mod routes_rpc;
+pub mod routes_session;
 pub mod routes_static;
 
 pub use routes_rpc::RpcState;

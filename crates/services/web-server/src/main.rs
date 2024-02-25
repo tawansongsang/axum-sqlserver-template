@@ -14,7 +14,7 @@ use crate::web::{
     mw_auth::{mw_ctx_require, mw_ctx_resolve},
     mw_res_map::mw_response_map,
     mw_stamp::mw_req_stamp,
-    routes_login, routes_static, RpcState,
+    routes_login, routes_session, routes_static, RpcState,
 };
 
 use error::Result;
@@ -41,6 +41,7 @@ async fn main() {
 
     let routes_all = Router::new()
         .merge(routes_login::routes(mm.clone()))
+        .merge(routes_session::routes(mm.clone()))
         .nest("/api", routes_rpc)
         .layer(middleware::map_response(mw_response_map))
         .layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolve))

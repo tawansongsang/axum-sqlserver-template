@@ -8,7 +8,7 @@ use lib_sqlserver::{
     ctx::Ctx,
     model::{
         user_info::{
-            bmc::UserInfoBmc, UserInfo, UserInfoForCreate, UserInfoForLogin, UserInfoRecord,
+            bmc::UserInfoBmc, UserInfoForCreate, UserInfoForLogin, UserInfoGet, UserInfoRecord,
         },
         ModelManager,
     },
@@ -140,6 +140,7 @@ struct LogoutPayload {
 }
 // endregion: --- Logout
 
+// endregion: --- Register
 async fn api_register_handler(
     State(mm): State<ModelManager>,
     _cookies: Cookies,
@@ -173,7 +174,7 @@ async fn api_register_handler(
         .UserInfoID
         .ok_or(Error::RegisterUserInfoRecordNotFound)?;
 
-    let user_info = UserInfoBmc::first_by_id::<UserInfo>(&root_ctx, &mm, user_info_id).await?;
+    let user_info = UserInfoBmc::first_by_id::<UserInfoGet>(&root_ctx, &mm, user_info_id).await?;
 
     let body = Json(json!({
         "result": {
@@ -191,3 +192,4 @@ struct RegisterPayload {
     name: String,
     password: String,
 }
+// region:    --- Register
