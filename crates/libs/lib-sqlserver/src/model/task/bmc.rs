@@ -1,12 +1,10 @@
-use uuid::Uuid;
-
 use crate::{
     convert::TryFromRow,
     ctx::Ctx,
     model::{conditions, task::TaskRecord, Error, ListOptions, ModelManager, Result},
 };
 
-use super::{Task, TaskBy, TaskFilter, TaskParamsForCreate, TaskParamsForUpdate};
+use super::{TaskBy, TaskFilter, TaskParamsForCreate, TaskParamsForUpdate};
 
 pub struct TaskBmc;
 
